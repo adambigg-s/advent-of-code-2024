@@ -33,7 +33,6 @@ class Solution:
 
         enabled = True
         total = 0
-
         for match in matches:
             instruction = match[0]
             if instruction == "do()":
@@ -43,7 +42,7 @@ class Solution:
             elif instruction.startswith("mul(") and enabled:
                 x = int(match[1])
                 y = int(match[2])
-
+                
                 total += x * y
 
         return total
