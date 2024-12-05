@@ -42,7 +42,6 @@ class Solution:
             elif instruction.startswith("mul(") and enabled:
                 x = int(match[1])
                 y = int(match[2])
-                
                 total += x * y
 
         return total

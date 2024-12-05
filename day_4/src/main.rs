@@ -21,6 +21,7 @@ fn main() {
     }
 
     let solution: Solution = Solution::construct(&buffer);
+
     let instances_one: i32 = solution.solve_one();
     println!("part one: {instances_one}");
     let instances_two: i32 = solution.solve_two();
@@ -67,21 +68,26 @@ impl Solution {
 
     fn cross_search(&self, i: usize, j: usize) -> i32 {
         let mut occurances: i32 = 0;
-        let directions: Vec<(isize, isize)> = vec![
+        let directions: [(isize, isize); 4]= [
             (1, 1),
             (1, -1),
             (-1, 1),
             (-1, -1),
         ];
+        let target: [char; 3] = ['M', 'A', 'S'];
 
-        if self.grid[i][j] != 'A' {
+        if self.grid[i][j] != target[1] {
             return 0;
         }
 
         for (dx, dy) in directions {
             let (nx, ny) = Self::idx(i, j, dx, dy);
             let (nxp, nyp) = Self::idx(i, j, -dx, -dy);
-            if self.inbounds(nx, ny) && self.grid[ny][nx] == 'M' && self.inbounds(nxp, nyp) && self.grid[nyp][nxp] == 'S' {
+            if self.inbounds(nx, ny) 
+                && self.grid[ny][nx] == target[0] 
+                && self.inbounds(nxp, nyp) 
+                && self.grid[nyp][nxp] == target[2] 
+            {
                 occurances += 1;
             }
         }
@@ -91,7 +97,7 @@ impl Solution {
 
     fn search(&self, i: usize, j: usize) -> i32 {
         let mut occurances: i32 = 0;
-        let directions: Vec<(isize, isize)> = vec![
+        let directions: [(isize, isize); 8] = [
             (0, 1),
             (0, -1),
             (1, 0),
@@ -101,7 +107,7 @@ impl Solution {
             (-1, 1),
             (-1, -1),
         ];
-        let target: Vec<char> = vec!['X', 'M', 'A', 'S'];
+        let target: [char; 4] = ['X', 'M', 'A', 'S'];
 
         for (dx, dy) in directions {
             if self.grid[i][j] == target[0] {
@@ -133,6 +139,13 @@ impl Solution {
     }
 
     fn gridify(buffer: &str) -> Vec<Vec<char>> {
-        buffer.lines().map(|line| line.chars().collect()).collect()
+        buffer
+            .lines()
+            .map(|line| {
+                line
+                    .chars()
+                    .collect()
+            })
+            .collect()
     }
 }
