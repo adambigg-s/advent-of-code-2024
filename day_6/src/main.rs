@@ -23,7 +23,7 @@ fn main() {
     let mut solution: Solution = Solution::construct(&buffer);
 
     let s1 = Instant::now();
-    let part_one = solution.solve_one(testing);
+    let part_one = solution.solve_one();
     let p1 = s1.elapsed();
 
     let s2 = Instant::now();
@@ -37,14 +37,18 @@ fn main() {
 }
 
 #[derive(PartialEq, Clone, Copy)]
-struct Direction {
-    dx: isize,
-    dy: isize,
+struct Vec2 {
+    x: isize,
+    y: isize,
 }
 
-impl Direction {
-    fn default() -> Direction {
-        Direction { dx: 0, dy: -1 }
+impl Vec2 {
+    fn velocity_default() -> Vec2 {
+        Vec2 { x: 0, y: -1 }
+    }
+
+    fn from(x: isize, y: isize) -> Vec2 {
+        Vec2 { x, y }
     }
 }
 
@@ -52,7 +56,7 @@ impl Direction {
 enum Cell {
     Empty,
     Barrier,
-    Guard(Direction),
+    Guard(Vec2),
 }
 
 impl Cell {
@@ -60,7 +64,7 @@ impl Cell {
         match chr {
             '.' => Self::Empty,
             '#' => Self::Barrier,
-            '^' => Self::Guard(Direction::default()),
+            '^' => Self::Guard(Vec2::velocity_default()),
             _ => {
                 panic!("invalid character in grid");
             }
@@ -90,79 +94,73 @@ impl Solution {
         Solution { grid, y: m, x: n }
     }
 
-    fn solve_one(&mut self, testing: bool) -> i32 {
-        let mut seen: Vec<Vec<bool>> = vec![vec![false; self.x]; self.y];
-        let mut grid: Vec<Vec<Cell>> = self.grid.clone();
-        let (mut gx, mut gy) = self.find_guard();
-        let (mut dx, mut dy): (isize, isize) = (0, -1);
+    fn solve_one(&mut self) -> i32 {
+        let mut seen: Vec<(usize, usize)> = Vec::new();
+        self.populate_seen(&mut seen);
 
-        loop {
-            seen[gy][gx] = true;
-            if let Some((tx, ty)) = self.newdex(gx, gy, dx, dy) {
-                if grid[ty][tx].is_empty() {
-                    grid[ty][tx] = grid[gy][gx];
-                    grid[gy][gx] = Cell::Empty;
-                    (gx, gy) = (tx, ty);
-                } else {
-                    self.rotate(&mut dx, &mut dy);
-                }
-            } else {
-                break;
-            }
-        }
-
-        if testing {
-            for vec in &seen {
-                for ele in vec {
-                    if *ele {
-                        print!("X");
-                    } else {
-                        print!(".")
-                    }
-                }
-                println!();
-            }
-            println!();
-            println!();
-            for vec in &self.grid {
-                for ele in vec {
-                    if ele.is_empty() {
-                        print!(".");
-                    } else {
-                        print!("o");
-                    }
-                }
-                println!();
-            }
-        }
-
-        seen.iter().flatten().filter(|ele| **ele).count() as i32
+        seen.len() as i32
     }
 
     fn solve_two(&self) -> i32 {
-        let mut seen: Vec<Vec<bool>> = vec![vec![false; self.x]; self.y];
+        let mut seen: Vec<(usize, usize)> = Vec::new();
+        self.populate_seen(&mut seen);
+
+        let mut blockade: i32 = 0;
+        for (seen_x, seen_y) in &seen {
+            let mut grid = self.grid.clone();
+            let mut path: Vec<Vec<Option<Vec2>>> = vec![vec![None; self.x]; self.y];
+            let (mut gx, mut gy) = self.find_guard();
+            let (mut vx, mut vy) = (Vec2::velocity_default().x, Vec2::velocity_default().y);
+            grid[*seen_y][*seen_x] = Cell::Barrier;
+            let mut moved: bool = false;
+            loop {
+                if let Some(vec) = path[gy][gx] {
+                    if vec == Vec2::from(vx, vy) && moved {
+                        blockade += 1;
+                        break;
+                    }
+                } else {
+                    path[gy][gx] = Some(Vec2::from(vx, vy));
+                }
+                if let Some((tx, ty)) = self.newdex(gx, gy, vx, vy) {
+                    if grid[ty][tx].is_empty() {
+                        grid[ty][tx] = grid[gy][gx];
+                        grid[gy][gx] = Cell::Empty;
+                        (gx, gy) = (tx, ty);
+                        moved = true;
+                    } else {
+                        self.rotate(&mut vx, &mut vy);
+                        moved = false;
+                    }
+                } else {
+                    break;
+                }
+            }
+        }
+        
+        blockade
+    }
+
+    fn populate_seen(&self, seen: &mut Vec<(usize, usize)>) {
         let mut grid: Vec<Vec<Cell>> = self.grid.clone();
         let (mut gx, mut gy) = self.find_guard();
-        let (mut dx, mut dy): (isize, isize) = (0, -1);
-
-        let mut blockades: i32 = 0;
-
+        let (mut vx, mut vy) = (Vec2::velocity_default().x, Vec2::velocity_default().y);
         loop {
-            seen[gy][gx] = true;
-            if let Some((tx, ty)) = self.newdex(gx, gy, dx, dy) {
+            if !seen.contains(&(gx, gy)) {
+                seen.push((gx, gy));
+            }
+            if let Some((tx, ty)) = self.newdex(gx, gy, vx, vy) {
                 if grid[ty][tx].is_empty() {
                     grid[ty][tx] = grid[gy][gx];
                     grid[gy][gx] = Cell::Empty;
                     (gx, gy) = (tx, ty);
                 } else {
-                    self.rotate(&mut dx, &mut dy);
+                    self.rotate(&mut vx, &mut vy);
                 }
             } else {
                 break;
             }
         }
-
-        blockades
     }
 
     fn rotate(&self, dx: &mut isize, dy: &mut isize) {
@@ -216,7 +214,7 @@ impl Solution {
     fn gridify(buffer: &str) -> Vec<Vec<Cell>> {
         buffer
             .lines()
-            .map(|line| line.chars().map(|chr| Cell::from_chr(chr)).collect())
+            .map(|line| line.chars().map(Cell::from_chr).collect())
             .collect()
     }
 }
