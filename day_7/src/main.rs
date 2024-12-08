@@ -5,6 +5,8 @@ use std::{env, fs, process, time::Instant};
 
 
 
+type Num = i32;
+
 fn main() {
     let envs: Vec<String> = env::args().collect();
     let mut testing: bool = false;
@@ -75,7 +77,7 @@ impl Solution {
             let operators: [Operator; 2] = [Operator::Add, Operator::Mul];
             let operator_combinations = generate_combinations(params.len()-1, &operators);
             for opcom in &operator_combinations {
-                if self.is_valid_equation(target.clone(), params, opcom) {
+                if self.is_valid_equation(target, params, opcom) {
                     total_calibration_result = BigInt::add(&total_calibration_result, target);
                     break;
                 }
@@ -93,7 +95,7 @@ impl Solution {
             let operators: [Operator; 3] = [Operator::Add, Operator::Mul, Operator::Concat];
             let operator_combinations = generate_combinations(params.len()-1, &operators);
             for opcom in &operator_combinations {
-                if self.is_valid_equation(target.clone(), params, opcom) {
+                if self.is_valid_equation(target, params, opcom) {
                     total_calibration_result = BigInt::add(&total_calibration_result, target);
                     break;
                 }
@@ -103,7 +105,7 @@ impl Solution {
         total_calibration_result
     }
 
-    fn is_valid_equation(&self, target: BigInt, params: &[BigInt], opcom: &[Operator]) -> bool {
+    fn is_valid_equation(&self, target: &BigInt, params: &[BigInt], opcom: &[Operator]) -> bool {
         let mut total = params[0].clone();
         for i in 1..params.len() {
             let operator = opcom[i-1];
@@ -119,12 +121,12 @@ impl Solution {
                     total = BigInt::concat(&total, &param);
                 }
             };
-            if BigInt::lhsgreater(&total, &target) {
+            if BigInt::lhsgreater(&total, target) {
                 return false;
             }
         }
 
-        total == target
+        total == *target
     }
 }
 
@@ -159,6 +161,8 @@ enum Operator {
 struct BigInt {
     digits: Vec<u8>,
 }
+
+struct UIntInf { digits: Vec<u8> }
 
 impl BigInt {
     fn default() -> BigInt {
