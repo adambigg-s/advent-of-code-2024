@@ -1,13 +1,19 @@
 
 
 
-use std::{collections::{HashMap, HashSet}, env, fs, process, time::Instant};
+use std::{
+    collections::{HashMap, HashSet}, 
+    env, fs, 
+    ops::{Add, Mul, Sub}, 
+    process, time::Instant
+};
 
 
 
 type Num = i32;
 
-fn main() {
+fn main() 
+{
     let envs: Vec<String> = env::args().collect();
     let mut testing: bool = false;
     let file_path: &str = envs.get(1).map(|path| path.as_str()).unwrap_or_else(|| {
@@ -18,7 +24,9 @@ fn main() {
         println!("buffer read error: {err}");
         process::exit(3);
     });
-    if testing { println!("{buffer}"); }
+    if testing {
+        println!("{buffer}");
+    }
 
     let solution: Solution = Solution::construct(&buffer);
 
@@ -36,69 +44,72 @@ fn main() {
     println!();
 }
 
-struct Solution {
+struct Solution 
+{
     grid: Vec<Vec<char>>,
     xdim: usize,
     ydim: usize,
 }
 
 impl Solution {
-    fn construct(buffer: &str) -> Solution {
-        let grid: Vec<Vec<char>> = buffer
-            .lines()
-            .map(|line| {
-                line
-                    .chars()
-                    .collect()
-            })
-            .collect();
+    fn construct(buffer: &str) -> Solution 
+    {
+        let grid: Vec<Vec<char>> = buffer.lines().map(|line| line.chars().collect()).collect();
         let xdim = grid.first().unwrap().len();
         let ydim = grid.len();
 
         Solution { grid, xdim, ydim }
     }
 
-    fn solve_one(&self) -> Num {
+    fn solve_one(&self) -> Num 
+    {
         let antennas: HashMap<char, Vec<Antenna>> = self.serialize_antennas();
         let antinodes: HashSet<Vec2<isize>> = self.find_antinodes(&antennas);
 
-        antinodes.into_iter().filter(|node| self.validate_antinode(node)).count() as Num
+        antinodes
+            .into_iter()
+            .filter(|node| self.validate_antinode(node))
+            .count() as Num
     }
 
-    fn solve_two(&self) -> Num {
+    fn solve_two(&self) -> Num 
+    {
         let antennas: HashMap<char, Vec<Antenna>> = self.serialize_antennas();
         let antinodes: HashSet<Vec2<isize>> = self.find_antinodes_resonance(&antennas);
 
-        antinodes.into_iter().filter(|node| self.validate_antinode(node)).count() as Num
+        antinodes.len() as Num
     }
 
-    fn validate_antinode(&self, antinode: &Vec2<isize>) -> bool {
+    fn validate_antinode(&self, antinode: &Vec2<isize>) -> bool 
+    {
         (antinode.x as usize) < self.xdim && (antinode.y as usize) < self.ydim
     }
 
-    fn find_antinodes_resonance(&self, antennas: &HashMap<char, Vec<Antenna>>) -> HashSet<Vec2<isize>> {
+    fn find_antinodes_resonance(
+        &self,
+        antennas: &HashMap<char, Vec<Antenna>>,
+    ) -> HashSet<Vec2<isize>> 
+    {
         let mut antinodes: HashSet<Vec2<isize>> = HashSet::new();
 
         for tag in antennas.values() {
-            for i in 0..(tag.len()-1) {
-                for j in (i+1)..tag.len() {
+            for i in 0..(tag.len() - 1) {
+                for j in (i + 1)..tag.len() {
                     let ant1 = &tag[i];
                     let ant2 = &tag[j];
-                    let rise = ant1.coords.y - ant2.coords.y;
-                    let run = ant1.coords.x - ant2.coords.x;
+                    let invslope: Vec2<isize> = Vec2::con(
+                        ant1.coords.x - ant2.coords.x,
+                        ant1.coords.y - ant2.coords.y,
+                    );
 
                     let mut multiplier: isize = 0;
                     loop {
-                        let antinode1 = Vec2::con(
-                            ant1.coords.x + run * multiplier,
-                            ant1.coords.y + rise * multiplier,                        
-                        );
-                        let antinode2 = Vec2::con(
-                            ant2.coords.x - run * multiplier,
-                            ant2.coords.y - rise * multiplier,                        
-                        );
+                        let antinode1 = ant1.coords + invslope * multiplier;
+                        let antinode2 = ant2.coords - invslope * multiplier;
 
-                        if !self.validate_antinode(&antinode1) && !self.validate_antinode(&antinode2) {
+                        if !self.validate_antinode(&antinode1)
+                            && !self.validate_antinode(&antinode2)
+                        {
                             break;
                         }
                         if self.validate_antinode(&antinode1) {
@@ -116,27 +127,20 @@ impl Solution {
         antinodes
     }
 
-    fn find_antinodes(&self, antennas: &HashMap<char, Vec<Antenna>>) -> HashSet<Vec2<isize>> {
+    fn find_antinodes(&self, antennas: &HashMap<char, Vec<Antenna>>) -> HashSet<Vec2<isize>> 
+    {
         let mut antinodes: HashSet<Vec2<isize>> = HashSet::new();
         for tag in antennas.values() {
-            for i in 0..(tag.len()-1) {
-                for j in (i+1)..tag.len() {
+            for i in 0..(tag.len() - 1) {
+                for j in (i + 1)..tag.len() {
                     let ant1 = &tag[i];
                     let ant2 = &tag[j];
-                    let rise = ant1.coords.y - ant2.coords.y;
-                    let run = ant1.coords.x - ant2.coords.x;
-                    antinodes.insert(
-                        Vec2::con(
-                            ant1.coords.x + run,
-                            ant1.coords.y + rise,
-                        )
+                    let invslope: Vec2<isize> = Vec2::con(
+                        ant1.coords.x - ant2.coords.x,
+                        ant1.coords.y - ant2.coords.y,
                     );
-                    antinodes.insert(
-                        Vec2::con(
-                            ant2.coords.x - run,
-                            ant2.coords.y - rise,
-                        )
-                    );
+                    antinodes.insert(ant1.coords + invslope);
+                    antinodes.insert(ant2.coords - invslope);
                 }
             }
         }
@@ -144,7 +148,8 @@ impl Solution {
         antinodes
     }
 
-    fn serialize_antennas(&self) -> HashMap<char, Vec<Antenna>> {
+    fn serialize_antennas(&self) -> HashMap<char, Vec<Antenna>> 
+    {
         let mut antennas: HashMap<char, Vec<Antenna>> = HashMap::new();
         for y in 0..self.ydim {
             for x in 0..self.xdim {
@@ -162,48 +167,94 @@ impl Solution {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Hash)]
-struct Vec2<T> {
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
+struct Vec2<T> 
+{
     x: T,
     y: T,
 }
 
 impl<T> Vec2<T> {
-    fn con(x: T, y: T) -> Vec2<T> {
+    fn con(x: T, y: T) -> Vec2<T> 
+    {
         Vec2 { x, y }
     }
 }
 
+impl Mul<isize> for Vec2<isize> 
+{
+    type Output = Vec2<isize>;
+
+    fn mul(self, rhs: isize) -> Self::Output 
+    {
+        Vec2::con(
+            self.x * rhs,
+            self.y * rhs,
+        )
+    }
+}
+
+impl Add for Vec2<isize> 
+{
+    type Output = Vec2<isize>;
+
+    fn add(self, rhs: Vec2<isize>) -> Self::Output
+    {
+        Vec2::con(
+            self.x + rhs.x,
+            self.y + rhs.y,
+        )
+    }
+}
+
+impl Sub for Vec2<isize>
+{
+    type Output = Vec2<isize>;
+
+    fn sub(self, rhs: Vec2<isize>) -> Self::Output
+    {
+        Vec2::con(
+            self.x - rhs.x,
+            self.y - rhs.y
+        )
+    }
+}
+
 #[derive(Debug)]
-struct Antenna {
+struct Antenna 
+{
     _tag: char,
     coords: Vec2<isize>,
 }
 
-impl Antenna {
-    fn con(_tag: char, coords: Vec2<isize>) -> Antenna {
+impl Antenna 
+{
+    fn con(_tag: char, coords: Vec2<isize>) -> Antenna 
+    {
         Antenna { _tag, coords }
     }
 }
 
-trait IsEmpty {
+trait IsEmpty 
+{
     fn is_empty(&self) -> bool;
 }
 
-impl IsEmpty for char {
-    fn is_empty(&self) -> bool {
+impl IsEmpty for char 
+{
+    fn is_empty(&self) -> bool 
+    {
         *self == '.'
     }
 }
-
-
 
 #[cfg(test)]
 mod test {
     use super::*;
 
     #[test]
-    fn empty_test() {
+    fn empty_test() 
+    {
         assert!('.'.is_empty())
     }
 }
