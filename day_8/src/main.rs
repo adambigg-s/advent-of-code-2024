@@ -174,7 +174,8 @@ struct Vec2<T>
     y: T,
 }
 
-impl<T> Vec2<T> {
+impl<T> Vec2<T>
+{
     fn con(x: T, y: T) -> Vec2<T> 
     {
         Vec2 { x, y }
