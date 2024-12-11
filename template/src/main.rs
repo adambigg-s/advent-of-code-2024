@@ -29,13 +29,13 @@ fn main()
 
     let solution: Solution = Solution::construct(&buffer);
 
-    let s1 = Instant::now();
-    let part_one = solution.solve_one();
-    let p1 = s1.elapsed();
+    let s1: Instant = Instant::now();
+    let part_one: Num = solution.solve_one();
+    let p1: std::time::Duration = s1.elapsed();
 
-    let s2 = Instant::now();
-    let part_two = solution.solve_two();
-    let p2 = s2.elapsed();
+    let s2: Instant = Instant::now();
+    let part_two: Num = solution.solve_two();
+    let p2: std::time::Duration = s2.elapsed();
 
     println!("\n__--__--__--__--__--__--__--__--__--__--__--__\n");
     println!("part one: {}\ntime one: {:#?}", part_one, p1);
