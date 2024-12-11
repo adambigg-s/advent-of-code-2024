@@ -1,0 +1,10 @@
+
+
+
+a.out
+*.out
+a.exe
+*.exe
+
+build/
+bin/
