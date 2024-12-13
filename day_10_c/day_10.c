@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <ctype.h>
 
 
 
@@ -71,7 +72,8 @@ void read_file(const char* path, char* buffer)
     perror("buffer read error");
     exit(3);
   }
-  fread(buffer, sizeof(char), MAX_BUFFER_SIZE-1, file);
+  size_t bytes_read = fread(buffer, sizeof(char), MAX_BUFFER_SIZE-1, file);
+  buffer[bytes_read] = '\0';
   fclose(file);
 }
 
@@ -80,18 +82,24 @@ Solution* construct_solution(const char* buffer)
   Solution* solution = (Solution*)malloc(sizeof(Solution));
   size_t xdim = 0;
   size_t ydim = 0;
-  char line[MAX_BUFFER_SIZE];
-
   const char* ptr = buffer;
-  while (*ptr) {
-    size_t x = 0;
-    while (*ptr >= '0' && *ptr <= 9) {
+
+  while(*ptr) {
+    xdim = 0;
+    while (isdigit(*ptr)) {
       solution->grid[ydim][xdim] = *ptr - '0';
+      xdim++;
+      ydim++;
+    }
+    if (xdim > 0) {
       ptr++;
     }
-    ydim++;
-    ptr++;
-    xdim = 0;
+    while (*ptr && *ptr != '\n') {
+      ptr++;
+    }
+    if (*ptr == '\n') {
+      ptr++;
+    }
   }
 
   solution->xdim = xdim;
