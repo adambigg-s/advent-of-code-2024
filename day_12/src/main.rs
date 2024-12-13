@@ -172,6 +172,7 @@ impl Solution
     {
         let nx = (x as isize + dx) as usize;
         let ny = (y as isize + dy) as usize;
+
         if nx < self.xdim && ny < self.ydim {
             Some((nx, ny))
         } else {
@@ -195,16 +196,22 @@ struct Neighbors
     diag: Vec2, adj1: Vec2, adj2: Vec2,
 }
 
+impl Neighbors
+{
+    const fn cons(diag: Vec2, adj1: Vec2, adj2: Vec2) -> Neighbors
+    { Neighbors { diag, adj1, adj2 } }
+}
+
 const DIRECTIONS: [(isize, isize); 4] = [
     (0, 1), (0, -1),
     (1, 0), (-1, 0),
 ];
 
 const CORNER_CHECKS: [Neighbors; 4] = [
-    Neighbors { diag: Vec2::cons(1, 1), adj1: Vec2::cons(1, 0), adj2: Vec2::cons(0, 1) },
-    Neighbors { diag: Vec2::cons(1, -1), adj1: Vec2::cons(1, 0), adj2: Vec2::cons(0, -1) },
-    Neighbors { diag: Vec2::cons(-1, 1), adj1: Vec2::cons(-1, 0), adj2: Vec2::cons(0, 1) },
-    Neighbors { diag: Vec2::cons(-1, -1), adj1: Vec2::cons(-1, 0), adj2: Vec2::cons(0, -1) },
+    Neighbors::cons(Vec2::cons(1, 1), Vec2::cons(1, 0), Vec2::cons(0, 1)),
+    Neighbors::cons(Vec2::cons(-1, 1), Vec2::cons(-1, 0), Vec2::cons(0, 1)),
+    Neighbors::cons(Vec2::cons(-1, 1), Vec2::cons(-1, 0), Vec2::cons(0, 1)),
+    Neighbors::cons(Vec2::cons(-1, -1), Vec2::cons(-1, 0), Vec2::cons(0, -1)),
 ];
 
 fn get_directions() -> [(isize, isize); 4] { DIRECTIONS }
