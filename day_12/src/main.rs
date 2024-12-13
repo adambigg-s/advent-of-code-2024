@@ -1,12 +1,8 @@
 
 
 
-#[allow(unused_imports)]
 use std::{
-    collections::{HashMap, HashSet},
-    ops::{Add, Mul, Div, Sub},
-    env, fs, process,
-    time::Instant,
+    env, fs, time::Instant,
 };
 
 
@@ -21,35 +17,28 @@ fn main()
         testing = true;
         "testing.txt"
     });
-    let buffer: String = fs::read_to_string(file_path).unwrap_or_else(|err| {
-        println!("buffer read error: {err}");
-        process::exit(3);
-    });
+    let buffer: String = fs::read_to_string(file_path).unwrap();
     if testing { println!("{buffer}"); }
 
-    let solution: Solution = Solution::cons(&buffer);
-
     let s1: Instant = Instant::now();
+    let solution: Solution = Solution::cons(&buffer);
     let part_one: Num = solution.solve_one();
     let p1: std::time::Duration = s1.elapsed();
 
     let s2: Instant = Instant::now();
+    let solution: Solution = Solution::cons(&buffer);
     let part_two: Num = solution.solve_two();
     let p2: std::time::Duration = s2.elapsed();
 
     println!("\n__--__--__--__--__--__--__--__--__--__--__--__\n");
-    println!("part one: {}\ntime one: {:#?}", part_one, p1);
-    println!();
-    println!("part two: {}\ntime two: {:#?}", part_two, p2);
-    println!();
+    println!("part one: {}\ntime one: {:#?}\n", part_one, p1);
+    println!("part two: {}\ntime two: {:#?}\n", part_two, p2);
 }
 
 #[derive(Debug)]
 struct GeoData
 {
-    area: Num,
-    perimeter: Num,
-    corners: Num,
+    area: Num, perimeter: Num, corners: Num,
     _tag: char,
 }
 
@@ -78,6 +67,7 @@ impl Solution
         }).collect();
         let ydim = grid.len();
         let xdim = grid.first().unwrap().len();
+
         Solution { grid, xdim, ydim }
     }
 
@@ -192,23 +182,17 @@ impl Solution
 
 struct Vec2
 {
-    x: isize,
-    y: isize,
+    x: isize, y: isize,
 }
 
 impl Vec2
 {
-    const fn cons(x: isize, y: isize) -> Vec2
-    {
-        Vec2 { x, y }
-    }
+    const fn cons(x: isize, y: isize) -> Vec2 { Vec2 { x, y } }
 }
 
 struct Neighbors
 {
-    diag: Vec2,
-    adj1: Vec2,
-    adj2: Vec2,
+    diag: Vec2, adj1: Vec2, adj2: Vec2,
 }
 
 const DIRECTIONS: [(isize, isize); 4] = [
@@ -223,15 +207,9 @@ const CORNER_CHECKS: [Neighbors; 4] = [
     Neighbors { diag: Vec2::cons(-1, -1), adj1: Vec2::cons(-1, 0), adj2: Vec2::cons(0, -1) },
 ];
 
-fn get_directions() -> [(isize, isize); 4]
-{
-    DIRECTIONS
-}
+fn get_directions() -> [(isize, isize); 4] { DIRECTIONS }
 
-fn get_corner_opts() -> [Neighbors; 4]
-{
-    CORNER_CHECKS
-}
+fn get_corner_opts() -> [Neighbors; 4] { CORNER_CHECKS }
 
 
 
