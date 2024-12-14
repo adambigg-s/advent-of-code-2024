@@ -1,0 +1,7 @@
+
+let s2: Instant = Instant::now();
+let solution: Solution = Solution::cons(&buffer);
+let part_two: Num = solution.solve_two();
+let p2: std::time::Duration = s2.elapsed();
+
+println!("part two: {}\ntime two: {:#?}\n", part_two, p2);
