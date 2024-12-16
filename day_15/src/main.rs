@@ -2,7 +2,7 @@
 
 
 use std::{
-    env, fs, time::Instant,
+    collections::HashSet, env, fs, time::Instant
 };
 
 
@@ -55,14 +55,13 @@ impl Solution
         }
         let grid = parts.next().unwrap();
         let instructions = parts.next().unwrap();
-        let mut grid: Vec<Vec<char>> = grid.lines().map(|line| {
+        let grid: Vec<Vec<char>> = grid.lines().map(|line| {
             line.chars().collect()
         }).collect();
         let width = grid.first().unwrap().len();
         let height = grid.len();
         let instructions = instructions.chars().collect();
         let robot_coords = Self::find_robot(&grid, width, height).unwrap();
-        grid[robot_coords.y][robot_coords.x] = empty_entity();
 
         Solution { grid, robot_coords, width, height, instructions }
     }
@@ -86,14 +85,92 @@ impl Solution
         for idx in 0..self.instructions.len() {
             let movement = self.instructions[idx].get_movement();
             if let Some(destination) = self.idx(&self.robot_coords, &movement) {
-                self.recur_push_big(&destination, &movement);
+                if self.can_push_move(&destination, &movement) {
+                    self.recur_push_big(&destination, &movement);
+                }
                 self.try_move(&destination);
             }
         }
 
-        println!("{:?}", self.grid);
-
         self.coordinate_sum()
+    }
+
+    fn can_push_move(&self, start: &Vec2<usize>, direction: &Vec2<isize>) -> bool
+    {
+        let mut coords: Vec<Vec2<usize>> = Vec::new();
+        let mut visited: HashSet<Vec2<usize>> = HashSet::new();
+        self.recur_push_coords(direction, start, &mut coords, &mut visited);
+
+        coords.iter().all(|coord| {
+            let new = self.idx(coord, direction).unwrap();
+            self.grid[new.y][new.x].is_empty() || coords.contains(&new)
+        })
+    }
+
+    fn recur_push_coords(
+        &self,
+        direction: &Vec2<isize>,
+        start: &Vec2<usize>,
+        coord: &mut Vec<Vec2<usize>>,
+        visited: &mut HashSet<Vec2<usize>>
+    )
+    {
+        if !self.grid[start.y][start.x].is_box_any() || visited.contains(start) {
+            return;
+        }
+
+        visited.insert(*start);
+        let doublet = self.big_box_coords(start);
+        for &box_coord in &doublet {
+            if !coord.contains(&box_coord) {
+                coord.push(box_coord);
+            }
+
+            if let Some(next) = self.idx(&box_coord, direction) {
+                self.recur_push_coords(direction, &next, coord, visited);
+            }
+        }
+    }
+
+    fn recur_push_big(&mut self, start: &Vec2<usize>, direction: &Vec2<isize>)
+    {
+        if !self.grid[start.y][start.x].is_box_any() {
+            return;
+        }
+        let doublet = self.big_box_coords(start);
+        if let (Some(le), Some(ri)) = {
+            (self.idx(&doublet[0], direction), self.idx(&doublet[1], direction))
+        }
+        {
+            if self.grid[le.y][le.x].is_wall() || self.grid[ri.y][ri.x].is_wall() {
+                return;
+            }
+            if self.grid[le.y][le.x].is_box_any() && doublet.contains(&ri) {
+                self.recur_push_big(&le, direction);
+            }
+            if self.grid[ri.y][ri.x].is_box_any() && doublet.contains(&le) {
+                self.recur_push_big(&ri, direction);
+            }
+            if self.grid[le.y][le.x].is_box_any() && !doublet.contains(&le) {
+                self.recur_push_big(&le, direction);
+            }
+            if self.grid[ri.y][ri.x].is_box_any() && !doublet.contains(&ri) {
+                self.recur_push_big(&ri, direction);
+            }
+
+            if self.grid[le.y][le.x].is_empty() && doublet.contains(&ri) {
+                self.swap(doublet[0], le);
+                self.swap(doublet[1], ri);
+            }
+            else if self.grid[ri.y][ri.x].is_empty() && doublet.contains(&le) {
+                self.swap(doublet[1], ri);
+                self.swap(doublet[0], le);
+            }
+            else if self.grid[le.y][le.x].is_empty() && self.grid[ri.y][ri.x].is_empty() {
+                self.swap(doublet[0], le);
+                self.swap(doublet[1], ri);
+            }
+        }
     }
 
     fn recur_push(&mut self, start: &Vec2<usize>, direction: &Vec2<isize>)
@@ -115,32 +192,38 @@ impl Solution
         }
     }
 
-    fn recur_push_big(&mut self, start: &Vec2<usize>, direction: &Vec2<isize>)
+    fn big_box_coords(&self, start: &Vec2<usize>) -> [Vec2<usize>; 2]
     {
-        if !self.grid[start.y][start.x].is_box_any() {
-            return;
+        if self.grid[start.y][start.x].is_box_left() {
+            [*start, Vec2::cons(start.x + 1, start.y)]
         }
-        if let Some(target) = self.idx(start, direction) {
-            if self.grid[target.y][target.x].is_wall() {
-                return;
-            }
-            if self.grid[target.y][target.x].is_box() {
-                self.recur_push(&target, direction);
-            }
-
-            if self.grid[target.y][target.x].is_empty() {
-                self.swap(*start, target);
-            }
+        else if self.grid[start.y][start.x].is_box_right() {
+            [Vec2::cons(start.x - 1, start.y), *start]
+        }
+        else {
+            panic!()
         }
     }
 
     fn try_move(&mut self, target: &Vec2<usize>) -> bool
     {
         if self.grid[target.y][target.x].is_empty() {
+            self.swap(self.robot_coords, *target);
             self.robot_coords = *target;
             return true;
         }
         false
+    }
+
+    #[allow(dead_code)]
+    fn print_grid(&self)
+    {
+        (0..self.height).for_each(|y| {
+            (0..self.width).for_each(|x| {
+                print!("{}", self.grid[y][x]);
+            });
+            println!();
+        });
     }
 
     fn doublify(&mut self)
@@ -166,6 +249,7 @@ impl Solution
         }
         self.width *= 2;
         self.robot_coords.x *= 2;
+        self.grid[self.robot_coords.y][self.robot_coords.x] = robot_entity();
     }
 
     fn coordinate_sum(&self) -> Int
@@ -178,14 +262,15 @@ impl Solution
                 }
             })
         });
+
         result
     }
 
-    fn swap(&mut self, x: Vec2<usize>, y: Vec2<usize>)
+    fn swap(&mut self, from: Vec2<usize>, to: Vec2<usize>)
     {
-        let temp = self.grid[x.y][x.x];
-        self.grid[x.y][x.x] = self.grid[y.y][y.x];
-        self.grid[y.y][y.x] = temp;
+        let temp = self.grid[from.y][from.x];
+        self.grid[from.y][from.x] = self.grid[to.y][to.x];
+        self.grid[to.y][to.x] = temp;
     }
 
     fn find_robot(grid: &[Vec<char>], width: usize, height: usize) -> Option<Vec2<usize>>
@@ -194,7 +279,9 @@ impl Solution
             (0..width).find_map(|x| {
                 if grid[y][x].is_robot() {
                     Some(Vec2::cons(x, y))
-                } else { None }
+                } else {
+                    None 
+                }
             })
         })
     }
@@ -211,7 +298,7 @@ impl Solution
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct Vec2<T> { x: T, y: T, }
 
 impl<T> Vec2<T> { fn cons(x: T, y: T) -> Vec2<T> { Vec2 { x, y} } }
@@ -228,6 +315,7 @@ trait CharEntity
     fn is_right(&self) -> bool;
     fn is_box_any(&self) -> bool;
     fn is_box_left(&self) -> bool;
+    fn is_box_right(&self) -> bool;
     fn get_movement(&self) -> Vec2<isize>
     {
         if self.is_up() {
@@ -256,9 +344,11 @@ impl CharEntity for char
     fn is_right(&self) -> bool { *self == '>' }
     fn is_box_any(&self) -> bool { *self == '[' || *self == ']' }
     fn is_box_left(&self) -> bool { *self == '[' }
+    fn is_box_right(&self) -> bool { *self == ']' }
 }
 
 fn empty_entity() -> char { '.' }
 fn wall_entity() -> char { '#' }
 fn box_left() -> char { '[' }
 fn box_right() -> char { ']' }
+fn robot_entity() -> char { '@' }
