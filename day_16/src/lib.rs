@@ -1,9 +1,16 @@
-use std::ops::Neg;
 
+
+
+use std::{cmp::Ordering, hash::{Hash, Hasher}, ops::Neg};
 
 
 
 pub type Int = i32;
+
+pub fn start() -> char { 'S' }
+pub fn end() -> char { 'E' }
+pub fn wall() -> char { '#' }
+pub fn empty() -> char { '.' }
 
 pub trait CharEntity
 {
@@ -21,11 +28,6 @@ impl CharEntity for char
     fn is_empty(&self) -> bool { *self == empty() }
 }
 
-pub fn start() -> char { 'S' }
-pub fn end() -> char { 'E' }
-pub fn wall() -> char { '#' }
-pub fn empty() -> char { '.' }
-
 pub const DIRECTIONS: [Vec2<isize>; 4] = [
     Vec2::cons(0, 1), Vec2::cons(0, -1),
     Vec2::cons(1, 0), Vec2::cons(-1, 0),
@@ -36,7 +38,7 @@ pub fn get_directions() -> [Vec2<isize>; 4]
     DIRECTIONS
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy, PartialOrd, Ord, Debug)]
 pub struct Vec2<T>
 {
     pub x: T,
@@ -63,7 +65,7 @@ impl<T> Vec2<T>
     }
 }
 
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug)]
 pub struct State
 {
     pub pos: Vec2<usize>,
@@ -76,5 +78,40 @@ impl State
     pub fn cons(pos: Vec2<usize>, vel: Vec2<isize>, score: Int) -> State
     {
         State { pos, vel, score }
+    }
+}
+
+impl Hash for State
+{
+    fn hash<H: Hasher>(&self, state: &mut H)
+    {
+        self.pos.hash(state);
+        self.vel.hash(state);
+    }
+}
+
+impl PartialEq for State
+{
+    fn eq(&self, other: &Self) -> bool
+    {
+        self.pos == other.pos && self.vel == other.vel
+    }
+}
+
+impl Eq for State {}
+
+impl Ord for State
+{
+    fn cmp(&self, other: &Self) -> Ordering
+    {
+        self.score.cmp(&other.score)
+    }
+}
+
+impl PartialOrd for State
+{
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering>
+    {
+        Some(self.cmp(other))
     }
 }

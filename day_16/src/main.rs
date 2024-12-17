@@ -55,46 +55,46 @@ impl Solution
 
     fn solve_one(&self) -> Int
     {
-        let start: Vec2<usize> = self.find_tile(start()).unwrap();
-        let end: Vec2<usize> = self.find_tile(end()).unwrap();
-
-        self.bread_fish(start, end)
+        self.bread_fish()
     }
 
-    fn bread_fish(&self, start: Vec2<usize>, end: Vec2<usize>) -> Int
+    fn solve_two(&self) -> Int
     {
-        let mut queue: BinaryHeap<(Int, State)> = BinaryHeap::new();
-        let mut visited: HashSet<(Vec2<usize>, Vec2<isize>)> = HashSet::new();
 
-        for direc in get_directions() {
-            if let Some(new_pos) = self.idx(&start, &direc) {
-                if !self.maze[new_pos.y][new_pos.x].is_wall() {
-                    queue.push((0, State::cons(new_pos, direc, 0)));
-                    visited.insert((start, direc));
-                }
+        0
+    }
+
+    fn bread_fish(&self) -> Int
+    {
+        let mut heap: BinaryHeap<State> = BinaryHeap::new();
+        let mut visited: HashSet<State> = HashSet::new();
+
+        let start = self.find_tile(start()).unwrap();
+        let state = State::cons(start, Vec2::cons(1, 0), 0);
+        heap.push(state);
+        visited.insert(state);
+
+        while let Some(state) = heap.pop() {
+            if self.maze[state.pos.y][state.pos.x].is_end() {
+                return -state.score;
             }
-        }
 
-        while let Some((current_score, state)) = queue.pop() {
-            if state.pos == end {
-                return state.score;
+            for dir in [state.vel.rotate_cw(), state.vel.rotate_ccw()] {
+                let new_state = State::cons(state.pos, dir, state.score - 1000);
+                if visited.insert(new_state) {
+                    heap.push(new_state)
+                }
             }
 
             if let Some(new_pos) = self.idx(&state.pos, &state.vel) {
-                if !self.maze[new_pos.y][new_pos.x].is_wall() && visited.insert((new_pos, state.vel)) {
-                    let new_score = current_score + 1;
-                    queue.push((-new_score, State::cons(new_pos, state.vel, new_score)));
-                }
-            }
-
-            for new_dir in [state.vel.rotate_cw(), state.vel.rotate_ccw()] {
-                if visited.insert((state.pos, new_dir)) {
-                    let new_score = current_score + 1000;
-                    queue.push((-new_score, State::cons(state.pos, new_dir, new_score)));
+                if !self.maze[new_pos.y][new_pos.x].is_wall() {
+                    let new_state = State::cons(new_pos, state.vel, state.score - 1);
+                    if visited.insert(new_state) {
+                        heap.push(new_state);
+                    }
                 }
             }
         }
-
         Int::MAX
     }
 
@@ -121,8 +121,6 @@ impl Solution
             None
         }
     }
-
-    fn solve_two(&self) -> Int { 0 }
 }
 
 
@@ -142,5 +140,27 @@ mod test
         assert!(v1.rotate_ccw() == Vec2::cons(0, 1));
         assert!(v2.rotate_cw() == Vec2::cons(-1, 0));
         assert!(v2.rotate_ccw() == Vec2::cons(1, 0));
+    }
+
+    #[test]
+    fn heap_testing()
+    {
+        let state1 = State::cons(Vec2::cons(1, 1), Vec2::cons(0, 1), 1);
+        let state2 = State::cons(Vec2::cons(1, 1), Vec2::cons(1, -1), 10);
+        let mut heap: BinaryHeap<State> = BinaryHeap::new();
+        heap.push(state1);
+        heap.push(state2);
+
+        assert!(heap.pop().unwrap() == state2);
+        assert!(heap.pop().unwrap() == state1);
+
+        let state1 = State::cons(Vec2::cons(1, 1), Vec2::cons(0, 1), -1);
+        let state2 = State::cons(Vec2::cons(1, 1), Vec2::cons(1, -1), -10);
+        let mut heap: BinaryHeap<State> = BinaryHeap::new();
+        heap.push(state1);
+        heap.push(state2);
+
+        assert!(heap.pop().unwrap() == state1);
+        assert!(heap.pop().unwrap() == state2);
     }
 }
