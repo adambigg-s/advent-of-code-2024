@@ -57,5 +57,9 @@ impl Solution
         0
     }
 
-    fn solve_two(&self) -> Int { 0 }
+    fn solve_two(&self) -> Int
+    {
+
+        0
+    }
 }
