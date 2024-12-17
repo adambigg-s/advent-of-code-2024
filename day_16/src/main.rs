@@ -1,11 +1,11 @@
 
 
 
-use std::{collections::VecDeque, env, fs, time::Instant};
+use std::{collections::{BinaryHeap, HashSet}, env, fs, time::Instant};
+
+use day_16::*;
 
 
-
-type Int = i32;
 
 fn main()
 {
@@ -55,17 +55,47 @@ impl Solution
 
     fn solve_one(&self) -> Int
     {
-        let start = self.find_tile(start()).unwrap();
-        let end = self.find_tile(end()).unwrap();
+        let start: Vec2<usize> = self.find_tile(start()).unwrap();
+        let end: Vec2<usize> = self.find_tile(end()).unwrap();
 
-        self.bread_fish_church(start, end)
+        self.bread_fish(start, end)
     }
 
-    fn bread_fish_church(&self, start: Vec2<usize>, end: Vec2<usize>) -> Int
+    fn bread_fish(&self, start: Vec2<usize>, end: Vec2<usize>) -> Int
     {
-        let mut queue: VecDeque<State> = VecDeque::new();
+        let mut queue: BinaryHeap<(Int, State)> = BinaryHeap::new();
+        let mut visited: HashSet<(Vec2<usize>, Vec2<isize>)> = HashSet::new();
 
-        0
+        for direc in get_directions() {
+            if let Some(new_pos) = self.idx(&start, &direc) {
+                if !self.maze[new_pos.y][new_pos.x].is_wall() {
+                    queue.push((0, State::cons(new_pos, direc, 0)));
+                    visited.insert((start, direc));
+                }
+            }
+        }
+
+        while let Some((current_score, state)) = queue.pop() {
+            if state.pos == end {
+                return state.score;
+            }
+
+            if let Some(new_pos) = self.idx(&state.pos, &state.vel) {
+                if !self.maze[new_pos.y][new_pos.x].is_wall() && visited.insert((new_pos, state.vel)) {
+                    let new_score = current_score + 1;
+                    queue.push((-new_score, State::cons(new_pos, state.vel, new_score)));
+                }
+            }
+
+            for new_dir in [state.vel.rotate_cw(), state.vel.rotate_ccw()] {
+                if visited.insert((state.pos, new_dir)) {
+                    let new_score = current_score + 1000;
+                    queue.push((-new_score, State::cons(state.pos, new_dir, new_score)));
+                }
+            }
+        }
+
+        Int::MAX
     }
 
     fn find_tile(&self, tile: char) -> Option<Vec2<usize>>
@@ -95,49 +125,22 @@ impl Solution
     fn solve_two(&self) -> Int { 0 }
 }
 
-trait CharEntity
+
+
+#[cfg(test)]
+mod test
 {
-    fn is_start(&self) -> bool;
-    fn is_end(&self) -> bool;
-    fn is_wall(&self) -> bool;
-    fn is_empty(&self) -> bool;
-}
+    use super::*;
 
-impl CharEntity for char
-{
-    fn is_start(&self) -> bool { *self == start() }
-    fn is_end(&self) -> bool { *self == end() }
-    fn is_wall(&self) -> bool { *self == wall() }
-    fn is_empty(&self) -> bool { *self == empty() }
-}
-
-fn start() -> char { 'S' }
-fn end() -> char { 'E' }
-fn wall() -> char { '#' }
-fn empty() -> char { ',' }
-
-const DIRECTIONS: [Vec2<isize>; 4] = [
-    Vec2::cons(0, 1), Vec2::cons(0, -1),
-    Vec2::cons(1, 0), Vec2::cons(-1, 0),
-];
-
-fn get_directions() -> [Vec2<isize>; 4] { DIRECTIONS }
-
-struct Vec2<T> { x: T, y: T, }
-
-impl<T> Vec2<T> { const fn cons(x: T, y: T) -> Vec2<T> { Vec2 { x, y } } }
-
-struct State
-{
-    pos: Vec2<usize>,
-    direc: Vec2<isize>,
-    score: Int,
-}
-
-impl State
-{
-    fn cons(pos: Vec2<usize>, direc: Vec2<isize>) -> State
+    #[test]
+    fn rotate_testing()
     {
-        State { pos, direc, score: 0 }
+        let v1 = Vec2::cons(1, 0);
+        let v2 = Vec2::cons(0, -1);
+
+        assert!(v1.rotate_cw() == Vec2::cons(0, -1));
+        assert!(v1.rotate_ccw() == Vec2::cons(0, 1));
+        assert!(v2.rotate_cw() == Vec2::cons(-1, 0));
+        assert!(v2.rotate_ccw() == Vec2::cons(1, 0));
     }
 }
