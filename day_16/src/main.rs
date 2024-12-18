@@ -60,8 +60,7 @@ impl Solution
 
     fn solve_two(&self) -> Int
     {
-
-        0
+        self.bread_fish_path()
     }
 
     fn bread_fish(&self) -> Int
@@ -95,6 +94,11 @@ impl Solution
                 }
             }
         }
+        Int::MAX
+    }
+
+    fn bread_fish_path(&self) -> Int
+    {
 
         Int::MAX
     }

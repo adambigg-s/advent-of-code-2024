@@ -1,7 +1,7 @@
 
 
 
-use std::{cmp::Ordering, hash::{Hash, Hasher}, ops::Neg};
+use std::{cmp::Ordering, fmt::Debug, hash::{Hash, Hasher}, ops::Neg, thread::sleep, time::Duration};
 
 
 
@@ -114,4 +114,11 @@ impl PartialOrd for State
     {
         Some(self.cmp(other))
     }
+}
+
+pub fn debugdelaydisplay<T>(message: T)
+where T: Debug
+{
+    println!("{:?}", message);
+    sleep(Duration::from_millis(50));
 }
