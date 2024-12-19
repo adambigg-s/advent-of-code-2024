@@ -99,8 +99,84 @@ impl Solution
 
     fn bread_fish_path(&self) -> Int
     {
+        let mut heap: BinaryHeap<State> = BinaryHeap::new();
+        let mut visited: HashSet<State> = HashSet::new();
+        let mut best_paths: Vec<Vec<Vec2<usize>>> = Vec::new();
+        let mut path_map: HashSet<Vec2<usize>> = HashSet::new();
 
-        Int::MAX
+        let start = self.find_tile(start()).unwrap();
+        let state = State::cons(start, Vec2::cons(1, 0), 0);
+        heap.push(state);
+        visited.insert(state);
+
+        let mut best_score = Int::MAX;
+
+        while let Some(current_state) = heap.pop() {
+            if self.maze[current_state.pos.y][current_state.pos.x].is_end() {
+                if -current_state.score < best_score {
+                    best_score = -current_state.score;
+                    best_paths.clear();
+                    best_paths.push(self.reconstruct_path(&current_state, &mut visited));
+                }
+                else if -current_state.score == best_score {
+                    best_paths.push(self.reconstruct_path(&current_state, &mut visited));
+                }
+                continue;
+            }
+
+            for dir in [current_state.vel.rotate_cw(), current_state.vel.rotate_ccw()] {
+                let new_state = State::cons(current_state.pos, dir, current_state.score - 1000);
+                if visited.insert(new_state) {
+                    heap.push(new_state);
+                }
+            }
+
+            if let Some(new_pos) = self.idx(&current_state.pos, &current_state.vel) {
+                if !self.maze[new_pos.y][new_pos.x].is_wall() {
+                    let new_state = State::cons(new_pos, current_state.vel, current_state.score - 1);
+                    if visited.insert(new_state) {
+                        heap.push(new_state);
+                    }
+                }
+            }
+        }
+
+        for path in best_paths {
+            for tile in path {
+                path_map.insert(tile);
+            }
+        }
+        
+        path_map.len() as Int
+    }
+
+    fn reconstruct_path(&self, end_state: &State, visited: &mut HashSet<State>) -> Vec<Vec2<usize>>
+    {
+        let mut path = Vec::new();
+        let mut current = *end_state;
+        while current.pos != self.find_tile(start()).unwrap() {
+            path.push(current.pos);
+            for &prev in visited.iter() {
+                if self.is_previous_state(&prev, &current) {
+                    current = prev;
+                    break;
+                }
+            }
+        }
+        path.push(current.pos);
+        path.reverse();
+        path
+    }
+
+    fn is_previous_state(&self, prev: &State, current: &State) -> bool
+    {
+        let dx = current.pos.x as isize - prev.pos.x as isize;
+        let dy = current.pos.y as isize - prev.pos.y as isize;
+        let prev_vel = Vec2::cons(dx, dy);
+
+        (prev_vel == prev.vel && !self.maze[prev.pos.y][prev.pos.x].is_wall()) ||
+        (prev_vel == prev.vel.rotate_cw() && prev.score - current.score == 1000) ||
+        (prev_vel == prev.vel.rotate_ccw() && prev.score - current.score == 1000)
     }
 
     fn find_tile(&self, tile: char) -> Option<Vec2<usize>>
