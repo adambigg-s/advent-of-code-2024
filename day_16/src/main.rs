@@ -101,66 +101,7 @@ impl Solution
 
     fn bread_fish_path(&self) -> Int
     {
-        let mut heap: BinaryHeap<State> = BinaryHeap::new();
-        let mut visited: HashSet<State> = HashSet::new();
-        let mut predecessors: HashMap<State, Vec<State>> = HashMap::new();
-
-        let start = self.find_tile(start()).unwrap();
-        let state = State::cons(start, Vec2::cons(1, 0), 0);
-        heap.push(state);
-        visited.insert(state);
-
-        let mut paths = Vec::new();
-
-        while let Some(state) = heap.pop() {
-            if self.maze[state.pos.y][state.pos.x].is_end() {
-                paths.push(state.score);
-            }
-
-            for dir in [state.vel.rotate_cw(), state.vel.rotate_ccw()] {
-                let new_state = State::cons(state.pos, dir, state.score - 1000);
-                if !visited.contains(&new_state) || new_state.score <= state.score {
-                    heap.push(new_state);
-                    predecessors.entry(new_state).or_default().push(state);
-                }
-                visited.insert(new_state);
-            }
-
-            if let Some(new_pos) = self.idx(&state.pos, &state.vel) {
-                if !self.maze[new_pos.y][new_pos.x].is_wall() {
-                    let new_state = State::cons(new_pos, state.vel, state.score - 1);
-                    if !visited.contains(&new_state) || new_state.score <= state.score {
-                        heap.push(new_state);
-                        predecessors.entry(new_state).or_default().push(state);
-                    }
-                    visited.insert(new_state);
-                }
-            }
-        }
-        println!("{:?}", paths);
         0
-    }
-
-    fn reconstruct_paths(
-        &self,
-        end_state: State, 
-        predecessors: &HashMap<State, Vec<State>>
-    ) -> Vec<Vec<State>>
-    {
-        let mut paths = Vec::new();
-        if let Some(predecessors_list) = predecessors.get(&end_state) {
-            for pred in predecessors_list {
-                let subpaths = self.reconstruct_paths(*pred, predecessors);
-                for mut subpath in subpaths {
-                    subpaths.push(end_state);
-                    paths.push(subpath);
-                }
-            }
-        }
-        else {
-            paths.push(vec![end_state]);
-        }
-        paths
     }
 
     fn find_tile(&self, tile: char) -> Option<Vec2<usize>>
