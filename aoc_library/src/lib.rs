@@ -1,14 +1,29 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+
+
+
+pub mod vector;
+pub mod uintinf;
+pub mod utils;
+pub mod matrix;
+pub mod aocspecific;
+
+pub type Int = i32;
+pub type BigInt = i64;
+pub type BigBigInt = i128;
+
+
 
 #[cfg(test)]
-mod tests {
+mod tests
+{
     use super::*;
 
     #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+    fn it_works()
+    {
+        let x: BigBigInt = 100;
+        let y: i32 = 100;
+
+        assert!(x == y as BigBigInt);
     }
 }

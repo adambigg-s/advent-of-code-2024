@@ -1,7 +1,4 @@
-[package]
-name = "day_16"
-version = "0.1.0"
-edition = "2021"
 
-[dependencies]
+
+
 aoc_library = { git = "https://github.com/adambigg-s/advent-of-code-2024", subdir = "aoc_library" }

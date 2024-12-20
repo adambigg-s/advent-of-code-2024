@@ -5,6 +5,8 @@ use std::{collections::{BinaryHeap, HashMap, HashSet}, env, fs, time::Instant};
 
 use day_16::*;
 
+use aoc_library::*;
+
 
 
 fn main()
